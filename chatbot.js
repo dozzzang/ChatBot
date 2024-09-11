@@ -17,22 +17,24 @@ function response(
 ) {
   var offset = 0;
   var notice =
-    "\n식사 시간 안내\n\n-----평일-----\n아침 : \n점심 : \n저녁 : \n\n-----주말-----\n아침 : \n점심 : \n저녁 : \n\n식당 마지막 입장시간 55분,\n식사 후 퇴실시간 15분까지";
+    "\n-----식사 시간 안내-----\n아침 : 07:30 - 08:55\n점심 : 11:30 - 13:55\n저녁 : 17:30 - 18:55\n\n식당 마지막 입장시간 55분,\n식사 후 퇴실시간 15분까지";
 
-  switch (msg) {
-    case "/오늘":
-      offset = 0;
-      break;
-    case "/내일":
-      offset = 1;
-      break;
-    case "/모레":
-      offset = 2;
-      break;
-    default:
-      replier.reply("/오늘, /내일, /모레 중 하나를 입력해주세요.");
-      return;
-  }
+  if (msg.match(/^\/(오늘|내일|모레)$/)) {
+    switch (msg) {
+      case "/오늘":
+        offset = 0;
+        break;
+      case "/내일":
+        offset = 1;
+        break;
+      case "/모레":
+        offset = 2;
+        break;
+    }
+  } else if (msg.startsWith("/")) {
+    replier.reply("/오늘, /내일, /모레 중 하나를 입력해주세요.");
+    return;
+  } else return;
 
   var targetDate = getTargetDate(offset);
   //replier.reply("날짜 : " + targetDate);
