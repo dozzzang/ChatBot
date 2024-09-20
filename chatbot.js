@@ -1,3 +1,8 @@
+/* 추가할 사항
+ * 1.정센 2.복지관 3.카페테리아 첨성(1000원의 아침밥) 4.GP감꽃식당 5.공식당(교직원-학생)
+ *  모두 구조는 같다. 한 번만 짜면 재사용이 가능
+ *  역시 모레까지만 지원할 것인가?
+ */
 const scriptName = "봇";
 
 function getTargetDate(offset) {
@@ -20,6 +25,7 @@ function getDormitoryUrl(dormitory) {
 }
 
 function getMealData(url) {
+  //GET method
   return org.jsoup.Jsoup.connect(url).get();
 }
 
@@ -82,7 +88,8 @@ function response(
   var match = msg.match(/^\/(보람관|누리관|첨성관)\s*(오늘|내일|모레)$/);
 
   if (match) {
-    dormitory = match[1]; // 보람관, 누리관, 첨성관
+    //보,누,첨 중에 고르기
+    dormitory = match[1];
     switch (match[2]) {
       case "오늘":
         offset = 0;
@@ -96,7 +103,7 @@ function response(
     }
   } else if (msg.startsWith("/")) {
     replier.reply(
-      "/사용법." //다시 만들기..
+      "-----사용법-----\n /(기숙사명) (오늘/내일/모레)\n ex)/보람관 오늘." //다시 만들기..
     );
     return;
   } else {
@@ -104,6 +111,7 @@ function response(
   }
 
   var targetDate = getTargetDate(offset);
+  //toString()
   var targetDay = targetDate.getDate().toString();
   var dormitoryUrl = getDormitoryUrl(dormitory);
 
