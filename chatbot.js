@@ -2,6 +2,8 @@
  * 1.정센 2.복지관 3.카페테리아 첨성(1000원의 아침밥) 4.GP감꽃식당 5.공식당(교직원-학생)
  *  모두 구조는 같다. 한 번만 짜면 재사용이 가능
  *  역시 모레까지만 지원할 것인가?
+ * -> 취소 너무 길어 카톡으로 보여주기 가독성 저하 -> 쉽고,간편하게 보여주자는 본질을 잃어버리는 듯. 코너별?? 이건 추후..
+ * -> 천 원의 아침밥 정도는 할만할듯
  */
 const scriptName = "봇";
 
@@ -19,17 +21,36 @@ function getDormitoryUrl(dormitory) {
       return "https://dorm.knu.ac.kr/newlife/newlife_04.php?get_mode=3";
     case "누리관":
       return "https://dorm.knu.ac.kr/newlife/newlife_04.php?get_mode=4";
+    case "천원":
+      return "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=37";
     default:
       return null;
   }
 }
 
-function getMealData(url) {
+// function getCafeteriaUrl(cafeteria) {
+//   switch(cafeteria) {
+//     case "정센":
+//       return "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=35";
+//     case "복지관":
+//       return "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=36";
+//     case "첨성":
+//       return "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=37";
+//     case "감꽃":
+//       return "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=46";
+//     case "공식당1":
+//       return "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=85";
+//     case "공식당2":
+//       return "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=86";
+//   }
+// }
+
+function getMeal(url) {
   //GET method
   return org.jsoup.Jsoup.connect(url).get();
 }
 
-function parseMealData(data, targetDay) {
+function parseDormMeal(data, targetDay) {
   var calenderTable = data.select("table#diary_t");
   var dayTds = calenderTable.select("td");
 
@@ -66,6 +87,28 @@ function parseMealData(data, targetDay) {
           }
         }
       }
+    }
+  }
+  return null;
+}
+
+// function parseCafeteriaMeal(data, targetDay) {
+//   var table = data.select("table#tstyle_me tac")
+//   var dayTds =
+// }
+
+function parseCheonwonMeal(data, targetDay) {
+  var cols = data.select("table.tstyle_me thead tr th");
+
+  for (var i = 0; i < cols.size(); i++) {
+    var col = cols.get(i);
+    var dateText = col.select("p.week_t").text().trim();
+
+    if (dateText.includes(targetDay)) {
+      var menuColumn = data.select("div.week_table tbody tr td").get(i - 1);
+      var menuItems = menuColumn.select("ul.menu_im li").text();
+
+      return menuItems;
     }
   }
   return null;
@@ -120,8 +163,8 @@ function response(
     return;
   }
 
-  var data = getMealData(dormitoryUrl);
-  var mealData = parseMealData(data, targetDay);
+  var data = getMeal(dormitoryUrl);
+  var mealData = parseDormMeal(data, targetDay);
 
   if (!mealData) {
     replier.reply(`${dormitory}의 해당 날짜 식단을 찾을 수 없습니다.`); //메신저 봇 R에서 지원하는가?
