@@ -98,20 +98,30 @@ function parseDormMeal(data, targetDay) {
 // }
 
 function parseCheonwonMeal(data, targetDay) {
-  var cols = data.select("table.tstyle_me thead tr th");
+  var dayColumns = data.select("table.tstyle_me thead tr th");
 
-  for (var i = 0; i < cols.size(); i++) {
-    var col = cols.get(i);
-    var dateText = col.select("p.week_t").text().trim();
+  for (var i = 0; i < dayColumns.size(); i++) {
+    var dayColumn = dayColumns.get(i);
+    var dateText = dayColumn.text().trim();
 
     if (dateText.includes(targetDay)) {
-      var menuColumn = data.select("div.week_table tbody tr td").get(i - 1);
-      var menuItems = menuColumn.select("ul.menu_im li").text();
+      var menuColumn = data.select("table.tstyle_me tbody tr td").get(i);
+      var menuItems = menuColumn.select("ul.menu_im li");
 
-      return menuItems;
+      if (menuItems.size() > 0) {
+        var firstMenu = menuItems.get(0).text();
+        if (firstMenu.includes("천원의밥상")) {
+          var fullMenu = firstMenu
+            .replace(/\*/g, "")
+            .replace(/<br\s*\/?>/g, "\n")
+            .replace(/<\/?p>/g, "")
+            .trim();
+          return fullMenu;
+        }
+      }
     }
   }
-  return null;
+  return "천원의 아침밥 오류.";
 }
 
 function response(
@@ -128,10 +138,10 @@ function response(
   var notice =
     "\n-----식사 시간 안내-----\n아침 : 07:30 - 08:55\n점심 : 11:30 - 13:55\n저녁 : 17:30 - 18:55\n\n식당 마지막 입장시간 55분,\n식사 후 퇴실시간 15분까지";
 
-  var match = msg.match(/^\/(보람관|누리관|첨성관)\s*(오늘|내일|모레)$/);
+  var match = msg.match(/^\/(보람관|누리관|첨성관|천원)\s*(오늘|내일|모레)$/);
 
   if (match) {
-    //보,누,첨 중에 고르기
+    //보,누,첨,천원의아침밥 중에 고르기
     dormitory = match[1];
     switch (match[2]) {
       case "오늘":
@@ -146,7 +156,7 @@ function response(
     }
   } else if (msg.startsWith("/")) {
     replier.reply(
-      "-----사용법-----\n /(기숙사명) (오늘/내일/모레)\n ex)/보람관 오늘." //다시 만들기..
+      "-----사용법-----\n /(기숙사명) (오늘/내일/모레)\n ex)/보람관 오늘\n 또는 /천원 (오늘/내일/모레)." //다시 만들기..
     );
     return;
   } else {
@@ -158,16 +168,19 @@ function response(
   var targetDay = targetDate.getDate().toString();
   var dormitoryUrl = getDormitoryUrl(dormitory);
 
-  if (dormitoryUrl === null) {
-    replier.reply("기숙사 정보를 찾을 수 없습니다.");
-    return;
-  }
+  // if (dormitoryUrl === null) {
+  //   replier.reply("기숙사 정보를 찾을 수 없습니다.");
+  //   return;
+  // }
 
   var data = getMeal(dormitoryUrl);
-  var mealData = parseDormMeal(data, targetDay);
-
+  if (dormitory === "천원") {
+    var mealData = parseCheonwonMeal(data, targetDay);
+  } else {
+    var mealData = parseDormMeal(data, targetDay);
+  }
   if (!mealData) {
-    replier.reply(`${dormitory}의 해당 날짜 식단을 찾을 수 없습니다.`); //메신저 봇 R에서 지원하는가?
+    replier.reply("해당 기숙사의 해당 날짜 식단을 찾을 수 없습니다."); // template literal 지원 x
   } else {
     replier.reply(mealData + notice);
   }
