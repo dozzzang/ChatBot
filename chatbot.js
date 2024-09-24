@@ -97,31 +97,40 @@ function parseDormMeal(data, targetDay) {
 //   var dayTds =
 // }
 
-function parseCheonwonMeal(data, targetDay) {
-  var dayColumns = data.select("table.tstyle_me thead tr th");
+function parseCheonwonMeal(data, offset) {
+  var menuColumns = data.select("table.tstyle_me tbody tr td");
+  var todayIndex = -1;
 
-  for (var i = 0; i < dayColumns.size(); i++) {
-    var dayColumn = dayColumns.get(i);
-    var dateText = dayColumn.text().trim();
-
-    if (dateText.includes(targetDay)) {
-      var menuColumn = data.select("table.tstyle_me tbody tr td").get(i);
-      var menuItems = menuColumn.select("ul.menu_im li");
-
-      if (menuItems.size() > 0) {
-        var firstMenu = menuItems.get(0).text();
-        if (firstMenu.includes("천원의밥상")) {
-          var fullMenu = firstMenu
-            .replace(/\*/g, "")
-            .replace(/<br\s*\/?>/g, "\n")
-            .replace(/<\/?p>/g, "")
-            .trim();
-          return fullMenu;
-        }
-      }
+  for (var i = 0; i < menuColumns.size(); i++) {
+    if (menuColumns.get(i).hasClass("on")) {
+      todayIndex = i;
+      break;
     }
   }
-  return "천원의 아침밥 오류.";
+
+  var targetIndex = todayIndex + offset;
+
+  // targetIndex가 유효한지 확인
+  if (targetIndex >= 0 && targetIndex < menuColumns.size()) {
+    var menuItems = menuColumns.get(targetIndex).select("ul.menu_im li p");
+
+    if (menuItems.size() > 0) {
+      var firstMenu = menuItems.get(0).html();
+      var fullMenu = firstMenu
+        //.replace(/.*천원의밥상.*/, "-----천원의 아침밥-----")
+        .replace(/<br\s*\/?>/g, "\n")
+        .replace(/<\/?p>/g, "")
+        .replace(/\s*￦.*/, "")
+        .replace(/^\s*|\s*$/g, "")
+        .trim();
+      var info = "-----천원의 아침밥-----\n";
+      var info_ = "\n 08:00 - 09:00";
+      return info + fullMenu + info_;
+    } else {
+      return "cheonWon Not Found.";
+    }
+  }
+  return "cheonWon Not Found.";
 }
 
 function response(
@@ -156,7 +165,7 @@ function response(
     }
   } else if (msg.startsWith("/")) {
     replier.reply(
-      "-----사용법-----\n /(기숙사명) (오늘/내일/모레)\n ex)/보람관 오늘\n 또는 /천원 (오늘/내일/모레)." //다시 만들기..
+      "-----사용법-----\n /(기숙사명) (오늘/내일/모레)\n ex)/보람관 오늘\n 또는\n /천원 (오늘/내일/모레)."
     );
     return;
   } else {
@@ -175,13 +184,10 @@ function response(
 
   var data = getMeal(dormitoryUrl);
   if (dormitory === "천원") {
-    var mealData = parseCheonwonMeal(data, targetDay);
+    var mealData = parseCheonwonMeal(data, offset);
+    replier.reply(mealData);
   } else {
     var mealData = parseDormMeal(data, targetDay);
-  }
-  if (!mealData) {
-    replier.reply("해당 기숙사의 해당 날짜 식단을 찾을 수 없습니다."); // template literal 지원 x
-  } else {
     replier.reply(mealData + notice);
   }
 }
